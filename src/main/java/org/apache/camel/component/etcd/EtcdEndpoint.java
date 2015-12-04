@@ -16,11 +16,22 @@
  */
 package org.apache.camel.component.etcd;
 
+import java.io.File;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.SSLContext;
+
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.DefaultPollingEndpoint;
 import org.apache.camel.spi.UriParam;
+
+import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.http.ssl.TrustStrategy;
+//import org.apache.http.conn.ssl.SSLSocketFactory;
+//import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.client.HttpAsyncClients;
 
 import com.justinsb.etcd.EtcdClient;
 
@@ -40,7 +51,33 @@ public class EtcdEndpoint extends DefaultPollingEndpoint{
 	
 	@Override
 	protected void doStart() throws Exception {
-		etcdClient = new EtcdClient(configuration.makeURI());
+                if ((configuration.getTrustSelfsigned() == true) || (configuration.getCaFile() != null) || (configuration.getKeyFile() != null)) {
+			// Need to create a custom httpclient since we need to change the SSL information.
+			SSLContextBuilder builder = new SSLContextBuilder();
+                        if (configuration.getTrustSelfsigned() == true) {
+				// Don't need to look at the CA file since we are going to trust anyhow.
+				final TrustStrategy acceptingTrustStrategy = new TrustStrategy() {
+     					@Override
+					public boolean isTrusted(X509Certificate[] certificate, String authType) {
+						return true;
+					}
+				};
+				builder.loadTrustMaterial(acceptingTrustStrategy);
+			} else {
+				if (configuration.getCaFile() != null) {
+					builder.loadTrustMaterial(new File(configuration.getCaFile()));
+				}
+			}
+			// Now check if there are any private keys.
+			if (configuration.getKeyFile() != null) {
+				builder.loadKeyMaterial(new File(configuration.getKeyFile()),null,null);
+			}
+			//SSLSocketFactory socketfactory = SSLSocketFactory(builder.build());
+			final CloseableHttpAsyncClient httpClient = HttpAsyncClients.custom().setSSLContext(builder.build()).build();
+			etcdClient = new EtcdClient(configuration.makeURI());
+		} else {
+			etcdClient = new EtcdClient(configuration.makeURI());
+		}
 	}
 	
 

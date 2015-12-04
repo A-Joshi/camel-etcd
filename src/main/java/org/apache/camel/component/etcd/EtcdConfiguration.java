@@ -62,9 +62,34 @@ public class EtcdConfiguration {
 	private boolean bootstrap = false;
 	
 	
-	
+	/**
+	 * Indicates which operating mode {@link EtcdProducer} will assume. It uses the values present in {@link EtcdMode}.
+	 */
 	@UriParam
 	private Integer ttl;
+	
+	
+	/**
+	 * Indicates whether to  trust a self-signed cert.
+	 */
+	@UriParam
+	private boolean trustSelfsigned = false;
+
+	
+	/**
+	 * Indicates if a custom certificate authority file should be used for self-signed certs.
+	 */
+	@UriParam
+	private String caFile = null;
+	
+
+	/**
+	 * Indicates if a custome private key should be used
+	 */
+	@UriParam
+	private String keyFile = null;
+
+
 
 	public URI makeURI() throws URISyntaxException {
 		return new URI(uri);
@@ -72,6 +97,10 @@ public class EtcdConfiguration {
 
 	public void setUri(String uri) {
 		this.uri = uri;
+	}
+
+	public String getUri() {
+		return uri;
 	}
 
 
@@ -127,5 +156,30 @@ public class EtcdConfiguration {
 	
 	public void setTtl(Integer ttl) {
 		this.ttl = ttl;
+	}
+
+
+	public boolean getTrustSelfsigned() {
+		return trustSelfsigned;
+	}
+
+	public void setTrustSelfsigned(boolean trustSelfsigned) {
+		this.trustSelfsigned = trustSelfsigned;
+	}
+
+	public String getCaFile() {
+		return caFile;
+	}
+
+	public void setCaFile(String caFile) {
+		this.caFile = caFile;
+	}
+
+	public String getKeyFile() {
+		return keyFile;
+	}
+
+	public void setKeyFile(String keyFile) {
+		this.keyFile = keyFile;
 	}
 }

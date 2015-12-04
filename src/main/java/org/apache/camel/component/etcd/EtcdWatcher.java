@@ -2,6 +2,7 @@ package org.apache.camel.component.etcd;
 
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.CancellationException;
 
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
@@ -38,6 +39,8 @@ public class EtcdWatcher implements Runnable {
 
 	@Override
 	public void run() {
+                LOG.info("Etcd connection at " + configuration.getUri());
+                LOG.info("Etcd key to watch  " + configuration.getKey());
 
 		while (enabled) {
 			try {
@@ -50,9 +53,16 @@ public class EtcdWatcher implements Runnable {
 				exchange.getIn().setBody(result);
 
 				processor.process(exchange);
+			} catch (CancellationException ce) {
+				if (enabled) {
+					LOG.info("Etcd watcher cancelled unexpectedly.",ce);
+				} else {
+					LOG.info("Etcd watcher is shutting down.");
+				}
 			} catch (Exception e) {
 				LOG.warn("Something went wrong trying to process etcd result.",
 						e);
+                                enabled = false;
 			}
 
 		}
@@ -75,6 +85,12 @@ public class EtcdWatcher implements Runnable {
 			exchange.getIn().setBody(result);
 			processor.process(exchange);
 
+		} catch (CancellationException ce) {
+			if (enabled) {
+				LOG.info("Etcd watcher cancelled unexpectedly.",ce);
+			} else {
+				LOG.info("Etcd watcher is shutting down.");
+			}
 		} catch (Exception e) {
 			LOG.warn("Something went wrong trying to process etcd result.", e);
 		}
